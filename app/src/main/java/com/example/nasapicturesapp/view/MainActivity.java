@@ -1,103 +1,81 @@
 package com.example.nasapicturesapp.view;
 
+import android.content.res.AssetManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
-import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.ImageView;
-import android.widget.ListView;
 
 import com.example.nasapicturesapp.R;
 import com.example.nasapicturesapp.data.model.DataModel;
+import com.example.nasapicturesapp.view.adapter.CustomAdapter;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.reflect.TypeToken;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
-    private ListView mListViewPictures;
-    private DataModel mDataModel;
+    private RecyclerView mRvPictures;
+    private ArrayList<DataModel> mDataModelList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        loadJsonFile();
+        loadJsonData();
         setInitViews();
-        setViewListerners();
+        setViewListeners();
     }
 
-    private String loadJsonFile() {
-        String json = null;
+    private ArrayList<DataModel> loadJsonData() {
+        mDataModelList = new ArrayList<>();
+        Gson gson = new Gson();
         try {
-            InputStream is = getApplicationContext().getAssets().open("/asset/data.json");
-            int size = is.available();
-            byte[] buffer = new byte[size];
-            is.read(buffer);
-            is.close();
-            json = new String(buffer, "UTF-8");
-        } catch (IOException ex) {
-            ex.printStackTrace();
-            return null;
-        }
-        return json;
-    }
-
-    private String loadJsonData(DataModel dataModel) {
-        try {
-            JSONArray jsonArray = new JSONArray(loadJsonFile());
-            ArrayList<HashMap<String, String>> formList = new ArrayList<>();
-            HashMap<String, String> m_li;
-
-            for (int i = 0; i < jsonArray.length(); i++) {
-                JSONObject jo_inside = jsonArray.getJSONObject(i);
-                jo_inside.put("copyright", dataModel.getCopyright());
-                jo_inside.put("date", dataModel.getDate());
-                jo_inside.put("explanation", dataModel.getExplanation());
-                jo_inside.put("hdUrl", dataModel.getHdurl());
-                jo_inside.put("mediaType", dataModel.getMediaType());
-                jo_inside.put("serviceVersion", dataModel.getServiceVersion());
-                jo_inside.put("title", dataModel.getTitle());
-                jo_inside.put("url", dataModel.getUrl());
-                /*Log.d("Details-->", jo_inside.getString("formule"));
-                String formula_value = jo_inside.getString("formule");
-                String url_value = jo_inside.getString("url");
-
-                //Add your values in your `ArrayList` as below:
-                m_li = new HashMap<String, String>();
-                m_li.put("formule", formula_value);
-                m_li.put("url", url_value);
-
-                formList.add(m_li);*/
+            BufferedReader reader = new BufferedReader(new InputStreamReader(getAssets().open("data.json")));
+            StringBuilder jsonElement = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                jsonElement.append(line);
             }
-            return jsonArray.toString();
-        } catch (JSONException e) {
+            //Create generic type
+            Type type = new TypeToken<ArrayList<DataModel>>() {}.getType();
+            mDataModelList = gson.fromJson(jsonElement.toString(), type);
+        } catch (Exception e) {
             e.printStackTrace();
         }
+        return mDataModelList;
     }
 
     private void setInitViews() {
-        mListViewPictures = findViewById(R.id.lv_pictures);
-//        mImageViewPicture = findViewById(R.id.iv_picture);
+        mRvPictures = findViewById(R.id.rv_pictures);
     }
 
-    private void setViewListerners() {
-        CustomAdapter<ArrayList<String>> customAdapter = new CustomAdapter<ArrayList<String>>(this, R.layout.list_single_item, mDataModel.getHdurl());
-        mListViewPictures.setAdapter(customAdapter);
-        mListViewPictures.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                ImageView picture = (ImageView) parent.getAdapter().getItem(position);
-
-            }
-        });
+    private void setViewListeners() {
+        CustomAdapter customAdapter = new CustomAdapter(this, mDataModelList);
+        RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(getApplicationContext());
+        mRvPictures.setLayoutManager(layoutManager);
+        mRvPictures.setAdapter(customAdapter);
+        customAdapter.notifyDataSetChanged();
     }
 }
