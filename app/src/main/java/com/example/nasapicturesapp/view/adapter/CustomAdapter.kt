@@ -24,7 +24,10 @@ class CustomAdapter(private val mContext: Activity, private val mDataModelList: 
     }
 
     override fun onBindViewHolder(myViewHolder: MyViewHolder, i: Int) {
-        Picasso.get().load(mDataModelList!![i].getHdurl()).into(myViewHolder.ivPicture)
+        Picasso.get().load(mDataModelList!![i].getHdurl())
+                .error(R.mipmap.ic_launcher)
+                .placeholder(R.mipmap.ic_launcher)
+                .into(myViewHolder.ivPicture)
         myViewHolder.attachListener(mDataModelList[i], mListener)
     }
 
